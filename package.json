@@ -6,9 +6,12 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "launch": "yarn build && node lib/index.js"
+    "start": "node lib/index.js"
   },
   "dependencies": {
+    "chai": "^4.2.0",
+    "classroom-api": "../classroom-api",
+    "dt-utils": "../dt-utils",
     "jskarel-tester": "../jskarel-tester"
   },
   "devDependencies": {
