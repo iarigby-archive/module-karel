@@ -5,13 +5,14 @@ import { Partitions } from './partitions'
 type S = Submission
 
 const path = process.cwd() + '/output'
-const lastRun = fs
+const runs = fs
     .readdirSync(path)
     .map(dirname => dirname.match(/^run(\d+)$/))
     .filter(e => e != null)
     .map(match => Number(match![1]))
     .sort((a, b) => b - a)
-const currentRun = lastRun.length ? lastRun[0] + 1 : 1
+const lastRun = runs.length ? runs[0] : 0
+const currentRun = lastRun + 1
 
 const previousResults: any = getPreviousRunInfo()
 let notPassed: Submission[] = []

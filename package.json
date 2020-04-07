@@ -9,6 +9,8 @@
     "start": "node lib/index.js"
   },
   "dependencies": {
+    "@types/argparse": "^1.0.38",
+    "argparse": "^1.0.10",
     "chai": "^4.2.0",
     "classroom-api": "../classroom-api",
     "dt-utils": "../dt-utils",

@@ -1,15 +1,13 @@
-const root = '/home/ia/dev/dt'
-process.env.STUDENTS_DATA_PATH = `${root}/classroom-api/students.json`
-process.env.CLASSROOM_CREDENTIALS_PATH = `${root}/classroom-api/credentials.json`
-process.env.CLASSROOM_TOKEN_PATH = `${root}/classroom-api/token.json`
+import { setEnv, testerPath, config } from './config'
+const hw = setEnv()
+
 import { getSubmissions, Submission } from 'classroom-api'
 import { KarelTester } from 'jskarel-tester'
 import { downloadAssignment } from 'dt-utils'
 import * as runInfo from './runs'
 import { partitionResults } from './partitions'
-const subject = 'შესავალი ციფრულ ტექნოლოგიებში'
-const hw = 'დავალება 1'
-const tester = new KarelTester(process.cwd() + '/testFile.js')
+
+const tester = new KarelTester(testerPath(hw.id))
 
 function log<T>(e: T, message: string) {
     console.log(message)
@@ -58,7 +56,7 @@ function downloadAndTest(submission: Submission, index: number): Promise<Submiss
 }
 
 async function main() {
-    const submissions = await getSubmissions(subject, hw)
+    const submissions = await getSubmissions(config.subject, hw.name)
         .then(submissions => submissions
             .filter(runInfo.newSubmission)
             // .slice(0, 100)
