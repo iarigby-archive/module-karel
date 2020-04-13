@@ -1,40 +1,42 @@
 import { setEnv, testerPath, config } from './config'
-const hw = setEnv()
+const { hw, slice, download, runOpts } = setEnv()
 
 import { getSubmissions, Submission } from 'classroom-api'
-import { KarelTester } from 'jskarel-tester'
+import {KarelTester} from 'jskarel-tester'
 import { downloadAssignment } from 'dt-utils'
-import * as runInfo from './runs'
+import { Run, log } from './runs'
 import { partitionResults } from './partitions'
-
+import fs from 'fs'
 const tester = new KarelTester(testerPath(hw.id))
 
-function log<T>(e: T, message: string) {
-    console.log(message)
-    return e
-}
+const run = new Run(hw, runOpts)
+const moveDir = '/home/ia/dev/dt/data/' + hw.id
+try {
+    fs.mkdirSync(moveDir)
+} catch (whatever) { }
 
 function downloadAtInterval(submission: Submission, index: number): Promise<string> {
-    const moveDir = '/home/ia/dev/dt/data/test'
-    return new Promise((resolve) =>
-        setTimeout(() => {
-            console.log(`${submission.emailId}: downloading`)
-            resolve(downloadAssignment({
-                downloadDir: '/home/ia/Downloads',
-                downloadUrl: submission.attachment!.downloadUrl,
-                fileName: submission.attachment!.title,
-                moveDir: moveDir,
-                timeout: 1000
-            }))
-        }, (index + 1) * 1000))
+    const fileName = submission.attachment!.title
+    return new Promise((resolve) => {
+        if (download) {
+            setTimeout(() => {
+                console.log(`${submission.emailId}: downloading`)
+                resolve(downloadAssignment({
+                    downloadDir: '/home/ia/Downloads',
+                    downloadUrl: submission.attachment!.downloadUrl,
+                    fileName: fileName,
+                    moveDir: moveDir,
+                    timeout: 500
+                }))
+            }, (index + 1) * 500)
+        } else {
+            resolve(`${moveDir}/${fileName}`)
+        }
+    })
 }
 
-
 function downloadAndTest(submission: Submission, index: number): Promise<Submission> {
-    if (!submission.check || !submission.qualifies()) {
-        // copy previous results
-        const prev = runInfo.findPreviousResult(submission)
-        submission.results = prev?.results || submission.results
+    if (!run.forceCheck(submission) && !submission.qualifies()) {
         return new Promise(r => r(submission))
     }
     const id = submission.emailId
@@ -57,21 +59,15 @@ function downloadAndTest(submission: Submission, index: number): Promise<Submiss
 
 async function main() {
     const submissions = await getSubmissions(config.subject, hw.name)
+        .then(submissions => slice ? submissions.slice(0, slice) : submissions)
         .then(submissions => submissions
-            .filter(runInfo.newSubmission)
-            // .slice(0, 100)
-            .map(runInfo.markForChecking)
-            .map(downloadAndTest))
+            .filter(s => !hw.skip?.includes(s.emailId) && (run.forceCheck(s) || run.newSubmission(s))))
+        .then(s => log(s, `downloading ${s.filter(e => e.onTime()).length}`))
+        .then(submissions => submissions.map(downloadAndTest))
     const results = await Promise.all(submissions)
-    const output = partitionResults(results)
-    runInfo.saveRunInfo(output)
-    let length = 0
-    for (let partition in output) {
-        const r: any[] = output[partition]
-        length = length + r.length
-        log({}, `${partition}: ${r.length}`)
-    }
-    console.log(submissions.length, length)
+    const output = partitionResults(results, hw)
+
+    run.saveRunInfo(output)
 }
 
 main()

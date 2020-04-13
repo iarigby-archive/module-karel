@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "node lib/index.js"
+    "start": "node lib/index.js",
+    "notify": "node lib/notifications.js"
   },
   "dependencies": {
     "@types/argparse": "^1.0.38",

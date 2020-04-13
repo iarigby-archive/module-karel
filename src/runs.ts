@@ -1,99 +1,136 @@
 import fs from 'fs'
-import { Submission } from 'classroom-api'
-import { Partitions } from './partitions'
+import {Submission} from 'classroom-api'
+import {Partitions} from './partitions'
+import {HwConfig} from './config'
 
-type S = Submission
-
-const path = process.cwd() + '/output'
-const runs = fs
-    .readdirSync(path)
-    .map(dirname => dirname.match(/^run(\d+)$/))
-    .filter(e => e != null)
-    .map(match => Number(match![1]))
-    .sort((a, b) => b - a)
-const lastRun = runs.length ? runs[0] : 0
-const currentRun = lastRun + 1
-
-const previousResults: any = getPreviousRunInfo()
-let notPassed: Submission[] = []
-for (let k of Object.keys(previousResults).filter(e => e != 'passed')) {
-    notPassed = notPassed.concat(previousResults[k])
+export interface RunOpts {
+    trial?: boolean,
+    restart?: boolean,
+    rerun?: boolean,
+    continue?: string,
+    omit: string[]
 }
-const forceRecheck: string[] = []
-
-
-export function newSubmission(s: Submission) {
-    if (forceRecheck.find(e => e == s.emailId)) return true
-    if (previousResults == {}) return true
-    const passed = previousResults.passed.find((e: Submission) => e.emailId == s.emailId)
-    if (passed) return false
-    return true
+export function log<T>(e: T, message: string) {
+    console.log(message)
+    return e
 }
+const path = `${process.cwd()}/output`
 
-export function newFile(s: Submission) {
-    const previous = findPreviousResult(s)
-    if (s.timeStamp) {
-        if (!previous.timeStamp) {
-            return true
-        } else {
-            return new Date(previous.timeStamp).getTime() < s.timeStamp.getTime()
+export class Run {
+    static getLastDate(submissions: Submission[]): Date {
+        return submissions
+            .map(s => s.timeStamp)
+            .sort((a, b) => b!.getTime() - a!.getTime())[0]!
+    }
+
+    private lastRun: number
+    private currentRun: number
+    private logs: Date[]
+    private lastRunDate: Date
+    public previousRunInfo: Partitions<Submission[]>
+    private path: string
+    private logFile: string
+    constructor(private hw: HwConfig, private opts: RunOpts) {
+        this.path = `${path}/${hw.id}`
+        this.setUpDirs(opts)
+        this.logFile = this.path + `/logs.json`
+        let runs: number[] = []
+        try {
+            runs = Run.getPreviousRuns(this.path)
+        } catch (w) { }
+        this.lastRun = runs.length ? runs[0] : 0
+        this.currentRun = this.lastRun + 1
+        try { fs.mkdirSync(path) } catch (whatever) { }
+        try { fs.mkdirSync(this.path) } catch (whatever) { }
+    
+        try {
+            this.logs = JSON.parse(fs.readFileSync(this.logFile, 'utf-8'))
+                .map((d: string) => new Date(d))
+        } catch (e) {
+            this.logs = []
         }
-    } else {
-        return false
-    }    
-}
-// assumes newSubmission has been run
-export function markForChecking(s: Submission) {
-    if (previousResults == {}) {
-        s.check = true
-        return s
+        this.lastRunDate = this.logs[this.logs.length - 1]
+        this.previousRunInfo = this.getPreviousRunInfo()
     }
-    if (forceRecheck.find(e => e == s.emailId)) {
-        s.check = true
-        return s
-    }
-    const previous = findPreviousResult(s)
-    if (!previous)
-        throw "cannot find previous records of " + s.emailId
-    if (previous.crashed) {
-        s.check = true
-        return s
-    }
-    s.check = newFile(s)
-    return s
-}
 
+    private setUpDirs(opts: RunOpts) {
+        if (opts.restart) {
+            try { fs.rmdirSync(this.path) } catch (w) { }
+        } else if (opts.rerun && this.lastRun) {
+            try { fs.rmdirSync(`${this.path}/run${this.lastRun}`) } catch (w) { }
+        }
+    }
 
-export function getPreviousRunInfo(): Partitions<Submission[]> {
-    const output: any = {}
-    if (currentRun == 1) {
+    public newSubmission(s: Submission): boolean {
+        if (!this.logs.length)
+            return true
+        return s.submittedAfter(this.lastRunDate)
+
+    }
+
+    public forceCheck(s: Submission): boolean {
+        const previouslyCrashed = this.previousRunInfo.crashed || []
+        const crashed = previouslyCrashed.filter(e => s.id == e.id)
+        const force = this.hw.exceptions?.late?.includes(s.emailId) || this.hw.force?.includes(s.emailId)
+        return crashed.length > 0 || force || this.hw.force?.includes(s.emailId) || false
+    }
+
+    private static getPreviousRuns(path: string) {
+        return fs
+            .readdirSync(path)
+            .map(dirname => dirname.match(/^run(\d+)$/))
+            .filter(e => e != null)
+            .map(match => Number(match![1]))
+            .sort((a, b) => b - a)
+    }
+    private getPreviousRunInfo(): Partitions<Submission[]> {
+        const output: any = {}
+        if (!this.lastRun) {
+            return output
+        }
+        const dir = this.path + '/run' + this.lastRun
+        fs.readdirSync(dir)
+            .filter(e => e.includes('.json'))
+            .forEach(file => {
+                const name = file.match(/(.*)\.json/)![1]
+                const contents = fs.readFileSync(dir + '/' + file, 'utf-8')
+                output[name] = JSON.parse(contents)
+            })
         return output
     }
-    const dir = path + '/run' + lastRun
-    fs.readdirSync(dir)
-        .filter(e => e.includes('.json'))
-        .forEach(file => {
-            const name = file.match(/(.*)\.json/)![1]
-            const contents = fs.readFileSync(dir + '/' + file, 'utf-8')
-            const results: Submission[] = JSON.parse(contents)
-            output[name] = results
-        })
-    return output
-}
-export function saveRunInfo(output: Partitions<Submission[]>) {
-    const outPath = path + '/run' + currentRun
-    fs.mkdirSync(outPath)
-    const casted: any = output
-    for (let partition in output) {
-        const r: Submission[] = casted[partition] // damn you typescript:( 
-        const filename = `${outPath}/${partition}.json`
-        fs.writeFileSync(filename, JSON.stringify(r, null, '\t'))
-    }
-}
 
-export function findPreviousResult(submission: Submission): Submission {
-    const previous = notPassed.find(s => s.emailId == submission.emailId)
-    if (!previous)
-        throw "cannot find previous records of " + submission.emailId
-    return previous
+    logRunInfo(output: Partitions<Submission[]> | any) {
+        for (let partition in output) {
+            // TODO save this info
+            log({}, `${partition}: ${output[partition].length}`)
+        }
+    }
+    saveRunInfo(output: Partitions<Submission[]>) {
+        this.logRunInfo(output)
+        if (this.opts.trial) {
+            return
+        }
+        const submissions: Submission[] = Object.values(output).flat()
+        if (!submissions.length) {
+            console.log('no new submissions')
+            return
+        }
+        const outPath = this.path + '/run' + this.currentRun
+        fs.mkdirSync(outPath)
+        const casted: any = output
+        let length = 0
+        for (let partition in output) {
+            const r: Submission[] = casted[partition] // damn you typescript:( 
+            const filename = `${outPath}/${partition}.json`
+            length = length + r.length
+            fs.writeFileSync(filename, JSON.stringify(r, null, '\t'))
+        }
+        const currentLastDate = Run.getLastDate(submissions)
+        if (!this.logs.length || currentLastDate.getTime() > this.lastRunDate.getTime()) {
+            this.logs.push(currentLastDate)
+        }
+        console.log(submissions.length, length)
+        fs.writeFileSync(this.logFile, JSON.stringify(this.logs))
+    }
+
 }
