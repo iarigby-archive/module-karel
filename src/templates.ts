@@ -1,5 +1,7 @@
 import { Partitions } from "./partitions";
 import { Submission, getStudentByEmail } from "classroom-api";
+import { getArgs } from './config'
+const {hw} = getArgs()
 
 type S = Submission
 const urls = {
@@ -17,8 +19,14 @@ function fileInfo(s: S) {
 const blocked = 'ამ პრობლემის გამო დავალება ტესტირების შემდეგ ნაბიჯზე ვერ გადადის და სხვა შეცდომების არსებობა ცნობილი არ არის. თუ დედლაინამდე დრო დარჩა, შეგიძლია თავიდან ატვირთო. \
             \
             წარმატებები!'
-
-
+let [earlySuccess, earlyFail, moduleEnd]= ['', '','']
+// earlySuccess = `, თან დედლაინამდე ამდენი დღით ადრე. ძალიან მაგარია რომ ასეთი მონდომებით სწავლობ კოდის წერას` //
+// earlyFail = `ძალიან მაგარია, რომ ასე ადრე დაიწყე დავალების გაკეთება. ამ გადაწყვეტილების წყალობით კიდევ უამრავი დრო გაქვს რამდენიმე ხარვეზის გამოსასწორებლად. `
+if (hw.id.includes('bonus')) {
+    moduleEnd = `გილოცავ კარელის ბოლო დავალების წარმატებით ჩაბარებას! წარმატებები საგნის დანარჩენ ნაწილებზეც :)`
+} else {
+    moduleEnd = `გილოცავ ამდენი ამოცანის წარმატებით ამოხსნას. თუ მესამე ბონუსიც გამოაგზავნე, პასუხი ხვალ ან ზეგ მოგივა.`
+}
 export const templates: Partitions<(s: S) => string> | any = {
     late: (s: S) => `
         გამარჯობა ${getStudentByEmail(s.emailId)?.georgianName},
@@ -34,7 +42,7 @@ export const templates: Partitions<(s: S) => string> | any = {
     invalid: (s: S) => `
         გამარჯობა ${getStudentByEmail(s.emailId)?.georgianName},
 
-        დავალების ფაილს არასწორი სახელი აქვს. ფაილის სახელში ვერ მოიძებნა '${s.emailId}.k' და/ან არის არანებადართული სიმბოლოები. დავალების სახელის დარქმევის წესი 
+        ${earlyFail}დავალების ფაილს არასწორი სახელი აქვს. ფაილის სახელში ვერ მოიძებნა '${s.emailId}.k' და/ან არის არანებადართული სიმბოლოები. დავალების სახელის დარქმევის წესი 
         ${urls.homework}    
 
         ${s.results}
@@ -48,7 +56,7 @@ export const templates: Partitions<(s: S) => string> | any = {
     error: (s: S) => `
         გამარჯობა ${getStudentByEmail(s.emailId)?.georgianName},
 
-        პროგრამის გაშვებაში პრობლემაა. მეილს თან ვურთავ ტესტერის მესიჯს. თუ მესიჯი გაუგებარია, მაშინ გადახედე წესებს ამ ბმულზე: 
+        ${earlyFail}პროგრამის გაშვებაში პრობლემაა. მეილს თან ვურთავ ტესტერის მესიჯს. თუ მესიჯი გაუგებარია, მაშინ გადახედე წესებს ამ ბმულზე: 
         ${urls.karelFile}
 
         ${s.results}
@@ -62,7 +70,7 @@ export const templates: Partitions<(s: S) => string> | any = {
     failed: (s: S) => `
         გამარჯობა ${getStudentByEmail(s.emailId)?.georgianName},
         
-        კარელი დავალების ყველა კრიტერიუმს თავს ვერ ართმევს. აი რა ტესტები გაიარა და/ან ვერ გაიარა შენმა კოდმა:
+        ${earlyFail}კარელი დავალების ყველა კრიტერიუმს თავს ვერ ართმევს. აი რა ტესტები გაიარა და/ან ვერ გაიარა შენმა კოდმა:
 
         ${s.results}
 
@@ -73,9 +81,9 @@ export const templates: Partitions<(s: S) => string> | any = {
         ${fileInfo(s)}
     `,
     passed: (s: S) => `
-        გილოცავ ${getStudentByEmail(s.emailId)?.georgianName}!
+        გამარჯობა ${getStudentByEmail(s.emailId)?.georgianName},
 
-        შენმა კოდმა სრულყოფილად გაართვა დავალებას თავი. წარმატებები მომავალ დავალებებზეც :)
+        შენმა კოდმა სრულყოფილად გაართვა დავალებას თავი${earlySuccess}.  ${moduleEnd}
 
         ია
     `
