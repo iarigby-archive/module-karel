@@ -12,7 +12,6 @@ const results = run.previousRunInfo
 function main() {
     const emails = Object.entries(results)
         .map(([type, submissions]: [string, Submission[]]) => {
-            console.log(notify[type], runOpts.omit.includes(type))
             if (runOpts.omit.includes(type)) {
                 return []
             } else if (notify[type]) {
