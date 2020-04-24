@@ -16,6 +16,12 @@ module.exports.config = [
             width: w,
             height: w
         }
+    },
+    {
+        world: {
+            width: w +1,
+            height: w + 1
+        }
     }
 ]
 
@@ -24,16 +30,23 @@ function beeperCount(karel, x, y) {
     return beeperPresent.length
 }
 
-function oneBeeper(karel) {
+function oneBeeper(karel, beepers) {
     const results = []
     for (let i = 1; i <= karel.world.width; i++) {
         for(let j = 1; j <= karel.world.height; j++) {
             results.push(beeperCount(karel, i, j))
         }
     }
-    return results.filter(e => e).length === karel.world.beepers.length
+    return results.filter(e => e === 1).length === beepers
 }
 module.exports.assertions = [
-    karel => expect(karel.world.beepers.length).equal(karel.world.width*karel.world.width, 'there should be widthxheight beepers'),
-    karel => expect(oneBeeper(karel)).equal(true, 'each corner should have exactly one beeper')
+    karel => {
+        const w = karel.world.width
+        const e = w*w
+        return expect(karel.world.beepers.length).equal(e, `${w}x${w} სამყაროში უნდა იყოს ${e} ბურთი`)
+    },
+    karel => {
+        const w = karel.world.width
+        return expect(oneBeeper(karel, w*w)).equal(true, `ყველა კუთხეში უნდა იყოს ზუსტად 1 ბურთი`)
+    }
 ]
