@@ -1,13 +1,14 @@
 import { setEnv, testerPath, config } from './config'
 const { hw, slice, download, runOpts } = setEnv()
-
+const downloadFile = require('../../../drive/index.js').download
 import { getSubmissions, Submission } from 'classroom-api'
-import {KarelTester} from 'jskarel-tester'
+import {Result, testSubmission} from 'jskarel-tester'
 import { downloadAssignment } from 'dt-utils'
 import { Run, log } from './runs'
 import { partitionResults } from './partitions'
 import fs from 'fs'
-const tester = new KarelTester(testerPath(hw.id))
+const testPath = testerPath(hw.id)
+// const tester = new KarelTester(testerPath(hw.id))
 
 const run = new Run(hw, runOpts)
 const moveDir = '/home/ia/dev/dt/data/' + hw.id
@@ -28,7 +29,7 @@ function downloadAtInterval(submission: Submission, index: number): Promise<stri
                     moveDir: moveDir,
                     timeout: 500
                 }))
-            }, (index + 1) * 500)
+            }, (index) * 1000)
         } else {
             resolve(`${moveDir}/${fileName}`)
         }
@@ -40,12 +41,15 @@ function downloadAndTest(submission: Submission, index: number): Promise<Submiss
         return new Promise(r => r(submission))
     }
     const id = submission.emailId
-    return downloadAtInterval(submission, index)
-        .then(e => log(e, `${id}: finished downloading`))
-        .then(newPath => tester.testSubmission(newPath))
-        .then(r => log(r, `${id}: finished testing`))
-        .then(results => submission.addResults(results))
-        .catch(error => {
+    // return downloadAtInterval(submission, index)
+    const attachment = submission.attachment!
+     return downloadFile(attachment.id, `${moveDir}/${attachment.title}`)
+        .then((e: string) => log(e, `${id}: finished downloading`))
+         .then((newPath: string) => testSubmission(testPath, newPath))
+        // .then(newPath => tester.testSubmission(newPath))
+         .then((r: Result[]) => log(r, `${id}: finished testing`))
+         .then((results: Result[]) => submission.addResults(results))
+        .catch((error: any) => {
             submission.results.push({
                 error: true,
                 message: "crash",
