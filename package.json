@@ -1,5 +1,5 @@
 {
-  "name": "karel",
+  "name": "module-karel",
   "version": "1.0.0",
   "description": "Karel module for digital technologies subject",
   "main": "lib/index.js",
@@ -12,10 +12,7 @@
   "dependencies": {
     "@types/argparse": "^1.0.38",
     "argparse": "^1.0.10",
-    "chai": "^4.2.0",
-    "classroom-api": "../classroom-api",
-    "dt-utils": "../dt-utils",
-    "jskarel-tester": "../jskarel-tester"
+    "chai": "^4.2.0"
   },
   "devDependencies": {
     "@types/node": "^13.9.8",
