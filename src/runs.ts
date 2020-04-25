@@ -107,16 +107,20 @@ export class Run {
     }
     saveRunInfo(output: Partitions<Submission[]>) {
         this.logRunInfo(output)
-        if (this.opts.trial) {
-            return
-        }
+        // if (this.opts.trial) {
+        //     return
+        // }
         const submissions: Submission[] = Object.values(output).flat()
         if (!submissions.length) {
             console.log('no new submissions')
             return
         }
-        const outPath = this.path + '/run' + this.currentRun
-        fs.mkdirSync(outPath)
+        let outPath = this.path + '/run' + this.currentRun
+        if (this.opts.trial) {
+            outPath = 'tmp/'
+        } else {
+            fs.mkdirSync(outPath)
+        }
         const casted: any = output
         let length = 0
         for (let partition in output) {
@@ -130,6 +134,8 @@ export class Run {
             this.logs.push(currentLastDate)
         }
         console.log(submissions.length, length)
+        if (this.opts.trial)
+            return
         fs.writeFileSync(this.logFile, JSON.stringify(this.logs))
     }
 

@@ -6,3 +6,4 @@ output/
 yarn-error.log
 .env
 .idea/
+tmp/
