@@ -145,5 +145,9 @@ export const homeworks: HwConfig[] = [
     {
         id: 'bonus-middle',
         name: 'ბონუსი-შუა წერტილი (3%)'
+    },
+    {
+        id: 'bonus-diagonal',
+        name: 'ბონუსი - დიაგონალები (3%)'
     }
 ];
