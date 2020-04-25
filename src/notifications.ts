@@ -12,10 +12,12 @@ const results = run.previousRunInfo
 function main() {
     const emails = Object.entries(results)
         .map(([type, submissions]: [string, Submission[]]) => {
+            const template = templates[type]
             if (runOpts.omit.includes(type)) {
-                return []
+                return submissions.filter(s => hw.force?.includes(s.emailId))
+                    .map(addToString)
+                    .map(s => getEmail(s, template(s)))
             } else if (notify[type]) {
-                const template = templates[type]
                 return submissions
                     .map(addToString)
                     .map(s => getEmail(s, template(s)))
@@ -27,7 +29,7 @@ function main() {
     const failedEmail = runOpts.continue + '@freeuni.edu.ge'
     const continuefrom = runOpts.continue ? emails.map(e => e.to).indexOf(failedEmail) : 0
     if (runOpts.trial) {
-        console.log(emails.slice(continuefrom, emails.length - 1))
+        console.log(emails.slice(continuefrom, emails.length))
     } else {
         email.sendEmails(emails.slice(continuefrom, emails.length), 2000)
     }

@@ -25,7 +25,7 @@ let [earlySuccess, earlyFail, moduleEnd]= ['', '','']
 if (hw.id.includes('bonus')) {
     moduleEnd = `გილოცავ კარელის ბოლო დავალების წარმატებით ჩაბარებას! წარმატებები საგნის დანარჩენ ნაწილებზეც :)`
 } else {
-    moduleEnd = `გილოცავ ამდენი ამოცანის წარმატებით ამოხსნას. თუ მესამე ბონუსიც გამოაგზავნე, პასუხი ხვალ ან ზეგ მოგივა.`
+    moduleEnd = `გილოცავ ამდენი ამოცანის წარმატებით ამოხსნას.`
 }
 export const templates: Partitions<(s: S) => string> | any = {
     late: (s: S) => `

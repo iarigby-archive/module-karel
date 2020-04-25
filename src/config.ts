@@ -26,11 +26,12 @@ export function getArgs(): EnvOptions {
     parser.addArgument(['-t', '--trial'], {help: 'dont save output/print emails not send'})
     parser.addArgument(['-d', '--download'], {help: 'whether to download or use existing file'})
     parser.addArgument(['-e', '--restart'], {help: 'not working: delete all previous run data'})
-    parser.addArgument(['-l', '--rerun'], {help: 'not working: delete previous run data'})
+    parser.addArgument(['-r', '--rerun'], {help: 'not working: delete previous run data'})
     parser.addArgument(['-c', '--continue'], {help: 'continue from userId'})
     parser.addArgument(['-o', '--omit'], {help: 'skip all in category'})
     parser.addArgument(['-f', '--force'], {help: 'force check of id'})
     parser.addArgument(['-k', '--skip'], {help: 'skip check of id'})
+    parser.addArgument(['-l', '--late'], {help: 'ignore late of id'})
     const args = parser.parseArgs()
     const hwId: string = args['hw']
 
@@ -63,6 +64,16 @@ export function getArgs(): EnvOptions {
             hwConfig.skip = []
         }
         hwConfig.skip = hwConfig.skip.concat(skip)
+    }
+    const late = args.late?.split(',')
+    if (late) {
+        if (!hwConfig.exceptions ) {
+            hwConfig.exceptions = {}
+        }
+        if (!hwConfig.exceptions.late) {
+            hwConfig.exceptions.late = []
+        }
+        hwConfig.exceptions.late = hwConfig.exceptions.late.concat(late)
     }
     return {
         hw: hwConfig,
@@ -99,7 +110,7 @@ export const homeworks: HwConfig[] = [
         name: 'დავალება 1',
         exceptions: {
             // late: ['gsamk19', 'aeris19', 'akuba19', 'ninchkh19', 'kpant19']
-            // late: ['atutb19']
+            // late: ['atutb19', 'edane19]
         },
         // manualChecks: ['dtsom19', 'zkhut16']
         manualChecks: ['ninchkh19', 'aeris19']
@@ -111,7 +122,7 @@ export const homeworks: HwConfig[] = [
         manualChecks: ['rgoch19', 'lsats19', 'aatru19', 'apapi19'],
         exceptions: {
             // late: ['aerkv17']
-            // late: ['idoli19', 'atutb19']
+            // late: ['idoli19', 'atutb19', 'edane19']
         }
     },
     {
@@ -136,7 +147,10 @@ export const homeworks: HwConfig[] = [
     {
         id: 'hw3',
         name: 'დავალება 3',
-        skip: ['gmode19']
+        exceptions: {
+            // late: ['edane19']
+        },
+        manualChecks: ['saonia19']
     },
     {
         id: 'hw4',
@@ -148,6 +162,7 @@ export const homeworks: HwConfig[] = [
     },
     {
         id: 'bonus-diagonal',
-        name: 'ბონუსი - დიაგონალები (3%)'
+        name: 'ბონუსი - დიაგონალები (3%)',
+        manualChecks: ['mkikn19', ]
     }
 ];
