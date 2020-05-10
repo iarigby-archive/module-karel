@@ -22,24 +22,6 @@ async function main() {
     run.saveRunInfo(output)
 }
 
-function downloadAtInterval(submission: Submission, drive: Drive,  index: number): Promise<string> {
-    const attachment = submission.attachment!
-    const fileName = attachment.title
-    const id = attachment.id
-    const path = `${run.moveDir}/${fileName}`
-    return new Promise((resolve) => {
-            setTimeout(() => {
-        if (download) {
-                console.log(`${submission.emailId}: downloading`)
-                saveFile(drive, id, path)
-                    .then(() => resolve(path))
-        } else {
-            resolve(path)
-        }
-            }, (index) * 200)
-
-    })
-}
 
 function downloadAndTest(submission: Submission, drive: Drive, index: number): Promise<Submission> {
     if (!run.forceCheck(submission) && !submission.qualifies()) {
@@ -54,13 +36,32 @@ function downloadAndTest(submission: Submission, drive: Drive, index: number): P
         .catch((error: any) => logError(submission, error))
 }
 
+function downloadAtInterval(submission: Submission, drive: Drive,  index: number): Promise<string> {
+    const attachment = submission.attachment!
+    const fileName = attachment.title
+    const id = attachment.id
+    const path = `${run.moveDir}/${fileName}`
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            if (download) {
+                console.log(`${submission.emailId}: downloading`)
+                saveFile(drive, id, path)
+                    .then(() => resolve(path))
+            } else {
+                resolve(path)
+            }
+        }, (index) * 200)
+
+    })
+}
+
 function logError(submission: Submission, error: any) {
     submission.results.push({
         error: true,
         message: "crash",
         details: error
     })
-    log({}, `error: ${id}, ${error}`)
+    log({}, `error: ${submission.emailId}, ${error}`)
     submission.crashed = true
     return submission
 }
