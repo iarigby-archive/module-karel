@@ -14,7 +14,9 @@ export function log<T>(e: T, message: string) {
     console.log(message)
     return e
 }
-const path = `${process.cwd()}/output`
+const data_path = `/home/ia/dev/dt/data`
+const results_path = `${data_path}/output`
+const submissions_path = `${data_path}/submissions`
 
 export class Run {
     static getLastDate(submissions: Submission[]): Date {
@@ -28,19 +30,24 @@ export class Run {
     private logs: Date[]
     private lastRunDate: Date
     public previousRunInfo: Partitions<Submission[]>
+    public moveDir: string
     private path: string
     private logFile: string
-    constructor(private hw: HwConfig, private opts: RunOpts) {
-        this.path = `${path}/${hw.id}`
+    constructor(private hw: HwConfig, private opts: RunOpts, lastRun?: number) {
+        this.path = `${results_path}/${hw.id}`
+        this.moveDir = `${submissions_path}/${hw.id}`
+        try {
+            fs.mkdirSync(this.moveDir)
+        } catch (whatever) { }
         this.setUpDirs(opts)
         this.logFile = this.path + `/logs.json`
         let runs: number[] = []
         try {
             runs = Run.getPreviousRuns(this.path)
         } catch (w) { }
-        this.lastRun = runs.length ? runs[0] : 0
+        this.lastRun = lastRun || runs.length ? runs[0] : 0
         this.currentRun = this.lastRun + 1
-        try { fs.mkdirSync(path) } catch (whatever) { }
+        try { fs.mkdirSync(results_path) } catch (whatever) { }
         try { fs.mkdirSync(this.path) } catch (whatever) { }
     
         try {
