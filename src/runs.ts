@@ -25,8 +25,8 @@ export class Run {
             .sort((a, b) => b!.getTime() - a!.getTime())[0]!
     }
 
-    private lastRun: number
-    private currentRun: number
+    public lastRun: number
+    public currentRun: number
     private logs: Date[]
     private lastRunDate: Date
     public previousRunInfo: Partitions<Submission[]>
@@ -45,7 +45,7 @@ export class Run {
         try {
             runs = Run.getPreviousRuns(this.path)
         } catch (w) { }
-        this.lastRun = lastRun || runs.length ? runs[0] : 0
+        this.lastRun = lastRun || (runs.length ? runs[0] : 0)
         this.currentRun = this.lastRun + 1
         try { fs.mkdirSync(results_path) } catch (whatever) { }
         try { fs.mkdirSync(this.path) } catch (whatever) { }
